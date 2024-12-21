@@ -85,17 +85,101 @@ public:
   }
 };
 
+struct Player
+{
+  int score{0};
+};
+
+namespace Settings
+{
+  constexpr int bust{21};
+  constexpr int dealerStop{17};
+};
+
+bool dealerTurn(Deck &deck, Player &dealer)
+{
+  while (dealer.score < Settings::dealerStop)
+  {
+    Card dealerCard{deck.dealCard()};
+    dealer.score += dealerCard.value();
+    std::cout << "The dealer flips a " << dealerCard << ". They now have: " << dealer.score << '\n';
+  }
+
+  if (dealer.score > Settings::bust)
+  {
+    std::cout << "The dealer went bust!\n";
+    return true;
+  }
+  return false;
+}
+
+char playerWantsHit()
+{
+  while (true)
+  {
+    std::cout << "(h) to hit, or (s) to stand: ";
+    char input{};
+    std::cin >> input;
+
+    // If there is extraneous input, treat as failure case
+    if (!std::cin.eof() && std::cin.peek() != '\n')
+    {
+      std::cout << "Not a valid input. Try again: ";
+      std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // ignore any extraneous input
+      continue;
+    }
+    switch (input)
+    {
+    case 'h':
+      return true;
+    case 's':
+      return false;
+    }
+  }
+}
+
+bool playerTurn(Deck &deck, Player &player)
+{
+  while (player.score < Settings::bust && playerWantsHit())
+  {
+    Card playerCard{deck.dealCard()};
+    player.score += playerCard.value();
+    std::cout << "You were dealt a " << playerCard << ". You now have: " << player.score << '\n';
+  }
+
+  if (player.score > Settings::bust)
+  {
+    std::cout << "You went bust!\n";
+    return true;
+  }
+
+  return false;
+}
+
+bool playBlackjack()
+{
+  Deck deck{};
+  deck.shuffle();
+
+  Player dealer{deck.dealCard().value()};
+  std::cout << "The dealer is showing: " << dealer.score << '\n';
+
+  Player player{deck.dealCard().value() + deck.dealCard().value()};
+  std::cout << "You have: " << player.score << '\n';
+
+  if (playerTurn(deck, player))
+    return false;
+
+  if (dealerTurn(deck, dealer))
+    return true;
+
+  return player.score > dealer.score;
+}
+
 int main()
 {
-  // Print one card
-  Card card{Card::rank_5, Card::suit_heart};
-  std::cout << card << '\n';
-
-  Deck deck{};
-  std::cout << deck.dealCard() << ' ' << deck.dealCard() << ' ' << deck.dealCard() << '\n';
-
-  deck.shuffle();
-  std::cout << deck.dealCard() << ' ' << deck.dealCard() << ' ' << deck.dealCard() << '\n';
+  playBlackjack() ? std::cout << "You win!" : std::cout << "You lose!";
+  std::cout << '\n';
 
   return 0;
 }
